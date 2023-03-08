@@ -9,15 +9,16 @@ app.use(cors());
 async function getKurs() {
   try {
     const siteUrl =
-      "https://kurs.dollar.web.id/kurs-transaksi-bank-indonesia.php";
+      "https://www.bi.go.id/en/statistik/informasi-kurs/transaksi-bi/Default.aspx";
     const { data } = await axios({
       method: "GET",
       url: siteUrl,
     });
 
     const $ = cheerio.load(data);
-    const elemSelector = "#main > div > div:nth-child(7) > table > tbody > tr";
-    const keys = ["Valas", "HargaBeli", "HargaJual"];
+    const elemSelector =
+      "#ctl00_PlaceHolderMain_g_6c89d4ad_107f_437d_bd54_8fda17b556bf_ctl00_GridView1 > table > tbody > tr";
+    const keys = ["Valas", "Value", "HargaJual", "HargaBeli", "HargaTengah"];
     const kursArr = [];
 
     $(elemSelector).each((parentIdx, parentElem) => {
@@ -27,8 +28,9 @@ async function getKurs() {
       $(parentElem)
         .children()
         .each((childIdx, childElem) => {
-          const tdValue = $(childElem).text();
+          var tdValue = $(childElem).text();
           if (tdValue) {
+            tdValue = tdValue.split(" ").join("");
             kursObj[keys[keyIdx]] = tdValue;
             keyIdx++;
           }
@@ -41,11 +43,31 @@ async function getKurs() {
   }
 }
 
+async function getDate() {
+  try {
+    const siteUrl =
+      "https://www.bi.go.id/en/statistik/informasi-kurs/transaksi-bi/Default.aspx";
+    const { data } = await axios({
+      method: "GET",
+      url: siteUrl,
+    });
+
+    const $ = cheerio.load(data);
+    const elemSelector =
+      "#tableData > div > div:nth-child(4) > div.row > div:nth-child(1) > div > div > span";
+    return $(elemSelector).text();
+  } catch (error) {
+    console.log(error);
+  }
+}
+
 app.get("/", async (req, res) => {
   try {
     const kursFeed = await getKurs();
+    const Date = await getDate();
     return res.status(200).json({
       kursFeed,
+      Date,
     });
   } catch (err) {
     return res.status(500).json({
