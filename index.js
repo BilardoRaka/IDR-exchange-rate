@@ -16,12 +16,14 @@ async function getKurs() {
     });
 
     const $ = cheerio.load(data);
-    const elemSelector =
+    const elemSelector1 =
       "#ctl00_PlaceHolderMain_g_6c89d4ad_107f_437d_bd54_8fda17b556bf_ctl00_GridView1 > table > tbody > tr";
-    const keys = ["Valas", "Value", "HargaJual", "HargaBeli", "HargaTengah"];
+    const keys = ["valas", "value", "sell_price", "buy_price", "middle_price"];
     const kursArr = [];
+    const elemSelector2 =
+      "#tableData > div > div:nth-child(4) > div.row > div:nth-child(1) > div > div > span";
 
-    $(elemSelector).each((parentIdx, parentElem) => {
+    $(elemSelector1).each((parentIdx, parentElem) => {
       let keyIdx = 0;
       const kursObj = {};
 
@@ -37,37 +39,21 @@ async function getKurs() {
         });
       kursArr.push(kursObj);
     });
-    return kursArr;
+    return {
+      rate: kursArr,
+      date: $(elemSelector2).text(),
+    };
   } catch (err) {
     console.error(err);
   }
 }
 
-async function getDate() {
-  try {
-    const siteUrl =
-      "https://www.bi.go.id/en/statistik/informasi-kurs/transaksi-bi/Default.aspx";
-    const { data } = await axios({
-      method: "GET",
-      url: siteUrl,
-    });
-
-    const $ = cheerio.load(data);
-    const elemSelector =
-      "#tableData > div > div:nth-child(4) > div.row > div:nth-child(1) > div > div > span";
-    return $(elemSelector).text();
-  } catch (error) {
-    console.log(error);
-  }
-}
-
 app.get("/", async (req, res) => {
   try {
-    const kursFeed = await getKurs();
-    const Date = await getDate();
+    const { rate, date } = await getKurs();
     return res.status(200).json({
-      kursFeed,
-      Date,
+      date,
+      rate,
     });
   } catch (err) {
     return res.status(500).json({
